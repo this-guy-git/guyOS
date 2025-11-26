@@ -1,0 +1,12 @@
+# Build folders
+build
+# Build Artifacts
+*.o
+*.obj
+# Executables
+*.exe
+*.dll
+# Binary disk images
+*.iso
+*.img
+*.bin
