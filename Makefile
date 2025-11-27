@@ -21,10 +21,10 @@ FAT_IMG := $(BUILD_DIR)/fat.img
 
 DISK_SIZE ?= 134217728  # 128MB
 FAT_OFFSET ?= 8388608    # 8MB offset
-FAT_SIZE_KB ?= 32768     # 32MB FAT
+FAT_SIZE_KB ?= 102400    # 100MB FAT (increased for filesystem)
 
 QEMU ?= qemu-system-x86_64
-QEMU_FLAGS := -machine q35 -cpu qemu64 -m 256M -serial stdio -drive format=raw,file=$(DISK_IMG)
+QEMU_FLAGS := -m 256M -serial stdio -hda $(DISK_IMG)
 
 CFLAGS := -ffreestanding -fno-stack-protector -fno-pic -m64 -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -O2 -Wall -Wextra -Wno-unused-parameter -g -Iinclude
 LDFLAGS := -nostdlib -z max-page-size=0x1000
@@ -36,6 +36,7 @@ run: $(DISK_IMG)
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
+	mkdir -p $(BUILD_DIR)/cmd
 
 $(STAGE2_BIN): $(BOOT_DIR)/stage2.asm | $(BUILD_DIR)
 	$(NASM) -f bin -o $@ $<
@@ -44,6 +45,7 @@ $(STAGE1_BIN): $(BOOT_DIR)/stage1.asm $(STAGE2_BIN) | $(BUILD_DIR)
 	SECT=$$($(PYTHON) -c "import math, os; size=os.path.getsize('$(STAGE2_BIN)'); print(max(1,(size+511)//512))"); \
 	$(NASM) -f bin -DSTAGE2_SECTORS=$$SECT -o $@ $<
 
+# Note: Added cmd_touch.c and cmd_cat.c to the compilation
 $(KERNEL_ELF): $(KERNEL_DIR)/linker.ld $(KERNEL_DIR)/boot.asm $(KERNEL_DIR)/kernel.c $(KERNEL_DIR)/shell.c $(KERNEL_DIR)/commands.c $(KERNEL_DIR)/disk.c $(KERNEL_DIR)/fat.c $(CMD_SRCS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $(KERNEL_DIR)/kernel.c -o $(BUILD_DIR)/kernel.o
 	$(CC) $(CFLAGS) -c $(KERNEL_DIR)/shell.c -o $(BUILD_DIR)/shell.o
@@ -69,16 +71,22 @@ $(FAT_IMG): | $(BUILD_DIR)
 	@if ! command -v mkfs.fat >/dev/null 2>&1; then echo "mkfs.fat not found (install dosfstools)"; exit 1; fi
 	mkfs.fat -F32 -s 1 -S 512 -n GUYOS -C $(FAT_IMG) $(FAT_SIZE_KB)
 
-$(DISK_IMG): $(STAGE1_BIN) $(STAGE2_BIN) $(KERNEL_BIN) $(FAT_IMG) KERNEL_META
-	$(PYTHON) -c "from pathlib import Path; pad=lambda b: b if len(b)%512==0 else b+b'\\x00'*(512-(len(b)%512)); \
-stage1=pad(Path('$(STAGE1_BIN)').read_bytes()); stage2=pad(Path('$(STAGE2_BIN)').read_bytes()); kernel=pad(Path('$(KERNEL_BIN)').read_bytes()); fat=pad(Path('$(FAT_IMG)').read_bytes()); \
-offset=$(FAT_OFFSET); disk=stage1+stage2+kernel; \
-disk = disk if len(disk)>=offset else disk + b'\\x00'*(offset-len(disk)); \
-disk = (disk[:offset]+fat+disk[offset+len(fat):]) if len(disk)>=offset+len(fat) else (disk + b'\\x00'*((offset+len(fat))-len(disk)) + fat); \
-disk = disk if len(disk)>=$(DISK_SIZE) else disk + b'\\x00'*($(DISK_SIZE)-len(disk)); \
-Path('$(DISK_IMG)').write_bytes(disk); print(f'Disk written: {len(disk)} bytes, FAT offset {offset}, FAT size {len(fat)}')"
+# Build filesystem structure after creating FAT image
+FS_BUILT: $(FAT_IMG) $(KERNEL_BIN) $(STAGE1_BIN) $(STAGE2_BIN)
+	@echo "Building filesystem structure..."
+	$(PYTHON) buildfs.py $(FAT_IMG) $(BUILD_DIR)
+	@touch $(BUILD_DIR)/FS_BUILT
+
+$(DISK_IMG): $(STAGE1_BIN) $(STAGE2_BIN) $(KERNEL_BIN) FS_BUILT KERNEL_META
+	@echo "Building disk image..."
+	$(PYTHON) builddisk.py $(STAGE1_BIN) $(STAGE2_BIN) $(KERNEL_BIN) $(FAT_IMG) $(FAT_OFFSET) $(DISK_SIZE)
 
 clean:
-	rm -f $(BUILD_DIR)/*.bin $(BUILD_DIR)/*.o $(BUILD_DIR)/*.elf $(BUILD_DIR)/*.img $(BUILD_DIR)/KERNEL_META $(BUILD_DIR)/cmd/*
+	rm -f $(BUILD_DIR)/*.bin $(BUILD_DIR)/*.o $(BUILD_DIR)/*.elf $(BUILD_DIR)/*.img $(BUILD_DIR)/KERNEL_META $(BUILD_DIR)/FS_BUILT $(BUILD_DIR)/cmd/*.o
+	@if [ -d "/tmp/guyos_mount" ]; then \
+		if mountpoint -q /tmp/guyos_mount 2>/dev/null; then \
+			sudo umount /tmp/guyos_mount 2>/dev/null || true; \
+		fi; \
+	fi
 
 .PHONY: all run clean
