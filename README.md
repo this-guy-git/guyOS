@@ -1,0 +1,79 @@
+# guyOS
+
+[![Build](https://img.shields.io/github/actions/workflow/status/withe/guyOS/build.yml?branch=main&label=build)](https://github.com/withe/guyOS/actions/workflows/build.yml)
+[![Stars](https://img.shields.io/github/stars/withe/guyOS?style=social)](https://github.com/withe/guyOS/stargazers)
+[![Issues](https://img.shields.io/github/issues/withe/guyOS)](https://github.com/withe/guyOS/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/withe/guyOS)](https://github.com/withe/guyOS/commits/main)
+[![License](https://img.shields.io/badge/license-GPLv3-lightgrey)](#license)
+
+guyOS is a small x86_64 hobby OS with a text-mode shell, a FAT32 filesystem, and built-in commands including a tiny editor (`tedit`). This repo builds a bootable disk image and runs it in QEMU.
+
+## Table of Contents
+- [Features](#features)
+- [Repo Layout](#repo-layout)
+- [Prerequisites](#prerequisites)
+- [Build & Run](#build--run)
+- [Filesystem Layout](#filesystem-layout)
+- [tedit (Tiny Editor)](#tedit-tiny-editor)
+- [Known Limitations](#known-limitations)
+- [Troubleshooting](#troubleshooting)
+- [More Docs](#more-docs)
+- [License](#license)
+
+## Features
+- Text-mode shell with prompt `user @ guyOS/<cwd>`.
+- FAT32 filesystem (8 MB offset) with basic file/dir ops; 8.3 + simple LFN handling.
+- Built-in commands: `help`, `clear`, `whoami`, `users`, `adduser`, `logout`, `halt`, `pwd`, `cd`, `ls`, `mkdir`, `touch`, `cat`, `mkuserdir`, `fixuserdirs`, `fstest`, `time` (stub), `version`, `reboot`, and `tedit`.
+- User accounts persisted in `/usr/accounts.bin`; per-user homes under `/usr/<user>`.
+- Minimal nano-like editor `tedit` (see [docs/tedit.md](docs/tedit.md)).
+
+## Repo Layout
+- `boot/` — Stage1/Stage2 bootloader.
+- `kernel/` — Kernel sources (`kernel.c`, `shell.c`, `fat.c`, `disk.c`, `commands.c`) and command implementations under `kernel/cmd/`.
+- `include/` — Public headers (`commands.h`, `shell_api.h`, `fat.h`, etc.).
+- `docs/` — Documentation (`overview.md`, `filesystem.md`, `tedit.md`, `commands.md`).
+- `buildfs.py`, `builddisk.py` — Helpers to populate the FAT partition and assemble the disk image.
+- `Makefile` — Build/run targets.
+
+## Prerequisites
+- x86_64-elf toolchain (`gcc`, `ld`, `objcopy`).
+- `nasm`, `python3`, `mkfs.fat`.
+- QEMU for running: `qemu-system-x86_64`.
+
+## Build & Run
+```bash
+make clean
+make
+make run   # boots QEMU with the built disk image
+```
+
+## Filesystem Layout
+- Root FAT partition at 8 MB offset.
+- Key paths: `/usr/<user>/downloads`, `/usr/<user>/documents`, `/shell/cmd` (command stubs), `/vital` (kernel/bootloader).
+- See [docs/filesystem.md](docs/filesystem.md) for full layout.
+
+## tedit (Tiny Editor)
+- Minimal nano-like editor; controls: `Ctrl+S` save, `Ctrl+Q` quit, arrows/Home/End move, Backspace/Delete edit, Enter newline.
+- Line numbers, inline underscore cursor; 8 KB buffer.
+- Docs: [docs/tedit.md](docs/tedit.md).
+
+## Known Limitations
+- No multitasking/userland; everything runs in kernel space.
+- No search/replace in `tedit`; no syntax highlighting.
+- FAT support is basic; limited robustness for large/fragmented files.
+
+## Troubleshooting
+- **Missing commands**: ensure `/shell/cmd/<name>` stubs exist on the FAT partition.
+- **Title not updating**: apps must restore `shell_title`; the shell resets it after commands.
+- **QEMU GUI issues**: try `-display sdl/win32` or `-display none` if GTK fails.
+
+## More Docs
+- [docs/overview.md](docs/overview.md) — OS summary.
+- [docs/filesystem.md](docs/filesystem.md) — FAT layout and directories.
+- [docs/tedit.md](docs/tedit.md) — Tiny editor usage.
+- [docs/commands.md](docs/commands.md) — Built-in commands and usage.
+- [docs/shell.md](docs/shell.md) — Shell internals and APIs.
+- [docs/build.md](docs/build.md) — Build/run details.
+
+## License
+GPL-3.0 (see `LICENSE`).
