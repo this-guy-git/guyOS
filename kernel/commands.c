@@ -9,11 +9,17 @@ extern const command_t CMD_ADDUSER;
 extern const command_t CMD_ECHO;
 extern const command_t CMD_TIME;
 extern const command_t CMD_LS;
+extern const command_t CMD_MKDIR;
+extern const command_t CMD_CD;
+extern const command_t CMD_FSTEST;
 extern const command_t CMD_PWD;
 extern const command_t CMD_VERSION;
 extern const command_t CMD_REBOOT;
-extern const command_t CMD_SAVE;
-extern const command_t CMD_LOAD;
+extern const command_t CMD_MKUSERDIR;
+extern const command_t CMD_FIXUSERDIRS;
+extern const command_t CMD_TOUCH;
+extern const command_t CMD_CAT;
+extern const command_t CMD_TEDIT;
 
 static const command_t *command_table[] = {
     &CMD_HELP,
@@ -24,11 +30,17 @@ static const command_t *command_table[] = {
     &CMD_ECHO,
     &CMD_TIME,
     &CMD_LS,
+    &CMD_MKDIR,
+    &CMD_MKUSERDIR,
+    &CMD_CD,
     &CMD_PWD,
+    &CMD_TOUCH,
+    &CMD_CAT,
+    &CMD_TEDIT,
+    &CMD_FSTEST,
+    &CMD_FIXUSERDIRS,
     &CMD_VERSION,
     &CMD_REBOOT,
-    &CMD_SAVE,
-    &CMD_LOAD,
 };
 
 const command_t *const *commands_get_list(size_t *count) {
