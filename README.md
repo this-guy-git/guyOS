@@ -1,4 +1,10 @@
+<div align="center">
+<img src="https://github.com/user-attachments/assets/69c44cc6-470a-435d-be5f-1627fd4c80f7"
+  width="500"
+/>
+  
 # guyOS
+</div>
 
 [![Build](https://img.shields.io/github/actions/workflow/status/this-guy-git/guyOS/build.yml?branch=main&label=build)](https://github.com/this-guy-git/guyOS/actions/workflows/build.yml)
 [![Stars](https://img.shields.io/github/stars/this-guy-git/guyOS?style=social)](https://github.com/this-guy-git/guyOS/stargazers)
