@@ -16,7 +16,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential nasm python3 dosfstools mtools qemu-system-x86
+          sudo apt-get install -y build-essential nasm python3 dosfstools mtools qemu-system-x86 syslinux isolinux genisoimage
 
       - name: Build disk image
         env:

@@ -855,3 +855,40 @@ uint32_t fat_ensure_dir_at(uint32_t parent_cluster, const char *name) {
 uint32_t fat_get_root_cluster(void) {
     return bpb.root_cluster;
 }
+
+bool fat_delete_file_at(uint32_t dir_cluster, const char *name) {
+    if (!name || !name[0]) return false;
+    char name83[11];
+    name_to_83(name, name83);
+
+    // locate entry
+    uint8_t buf[4096];
+    uint32_t cl = dir_cluster;
+    while (cl >= 2 && cl < 0x0FFFFFF8) {
+        if (!read_dir_cluster(cl, buf)) return false;
+        dirent_t *ents = (dirent_t *)buf;
+        int max_ents = (bpb.sectors_per_cluster * 512) / 32;
+        for (int i = 0; i < max_ents; i++) {
+            if (ents[i].name[0] == 0x00) return false;
+            if (ents[i].name[0] == 0xE5) continue;
+            if (ents[i].attr == ATTR_LONG_NAME) continue;
+            bool match = true;
+            for (int j = 0; j < 11; j++) {
+                if (ents[i].name[j] != (uint8_t)name83[j]) { match = false; break; }
+            }
+            if (match) {
+                // only allow file, not directory
+                if (ents[i].attr & ATTR_DIRECTORY) return false;
+                uint32_t first = ((uint32_t)ents[i].first_cluster_hi << 16) | ents[i].first_cluster_lo;
+                if (first >= 2) fat_free_chain(first);
+                ents[i].name[0] = 0xE5; // mark deleted
+                return write_dir_cluster(cl, buf);
+            }
+        }
+        uint32_t next = 0;
+        if (!fat_read_fat(cl, &next)) break;
+        if (next < 2 || next >= 0x0FFFFFF8) break;
+        cl = next;
+    }
+    return false;
+}

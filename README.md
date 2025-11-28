@@ -45,6 +45,8 @@ guyOS is a small x86_64 hobby OS with a text-mode shell, a FAT32 filesystem, and
 make clean
 make
 make run   # boots QEMU with the built disk image
+# optional: make iso   # packages guyos.img and fat.img into build/guyos.iso
+# optional: make iso-install   # builds a bootable installer ISO (isolinux+memdisk) in build/guyos-install.iso
 ```
 
 ## Filesystem Layout
@@ -74,6 +76,8 @@ make run   # boots QEMU with the built disk image
 - [docs/commands.md](docs/commands.md) — Built-in commands and usage.
 - [docs/shell.md](docs/shell.md) — Shell internals and APIs.
 - [docs/build.md](docs/build.md) — Build/run details.
+- [docs/virtualbox.md](docs/virtualbox.md) — Running under VirtualBox (VDI/raw).
+- [docs/installer.md](docs/installer.md) — Installer ISO plan and workflow.
 
 ## License
 GPL-3.0 (see `LICENSE`).

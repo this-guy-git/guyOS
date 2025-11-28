@@ -388,6 +388,17 @@ static uint32_t cwd_cluster = 0;
 static uint32_t shell_cmd_cluster = 0;
 static char home_path[64] = "/";
 
+// Show MOTD if /sys/motd exists
+static void show_motd(void) {
+    uint32_t sys = 0; bool is_dir = false;
+    if (!fat_resolve_path(fat_get_root_cluster(), "/sys", &sys, &is_dir) || !is_dir) return;
+    uint8_t buf[1024];
+    size_t got = 0;
+    if (!fat_read_file_at(sys, "motd", buf, sizeof(buf) - 1, &got)) return;
+    buf[got] = 0;
+    shell_write_line((const char *)buf);
+}
+
 static void build_path(const char *a, const char *b, const char *c, char *out, size_t out_sz) {
     size_t w = 0;
     const char *parts[3] = {a, b, c};
@@ -408,7 +419,7 @@ static const char *display_path(const char *cwd_path) {
         while (home_path[i] && cwd_path[i] && home_path[i] == cwd_path[i]) i++;
         if (home_path[i] == 0 && (cwd_path[i] == 0 || cwd_path[i] == '/')) {
             size_t w = 0;
-            buf[w++] = '~';
+            buf[w++] = '/~';
             while (cwd_path[i] && w + 1 < sizeof(buf)) buf[w++] = cwd_path[i++];
             buf[w] = 0;
             return buf;
@@ -817,9 +828,26 @@ static void handle_command(char *line, const char *current_user, bool *logout_re
 
     size_t n = 0;
     const command_t *const *cmds = commands_get_list(&n);
+    // Resolve aliases: user types alias -> run real command
+    char real_cmd[32];
+    size_t rc = 0;
+    while (cmd[rc] && rc + 1 < sizeof(real_cmd)) { real_cmd[rc] = cmd[rc]; rc++; }
+    real_cmd[rc] = 0;
+    size_t alias_count = 0;
+    const shell_alias_t *als = shell_aliases(&alias_count);
+    for (size_t i = 0; i < alias_count; i++) {
+        if (strcmp(real_cmd, als[i].alias) == 0) {
+            size_t j = 0;
+            while (als[i].real[j] && j + 1 < sizeof(real_cmd)) { real_cmd[j] = als[i].real[j]; j++; }
+            real_cmd[j] = 0;
+            break;
+        }
+    }
+
     for (size_t i = 0; i < n; i++) {
-        if (strcmp(cmd, cmds[i]->name) == 0) {
-            if (!command_file_present(cmd)) {
+        if (strcmp(real_cmd, cmds[i]->name) == 0) {
+            bool file_missing = !command_file_present(cmds[i]->name);
+            if (strcmp(real_cmd, cmd) == 0 && file_missing) {
                 terminal_write("command missing in /shell/cmd/: ");
                 terminal_writeln(cmd);
                 // Run built-in anyway so shell stays usable.
@@ -880,6 +908,7 @@ void shell_start(void) {
     cwd_cluster = fat_get_root_cluster();
     shell_set_cwd("/");
     ensure_shell_cmd_dir();
+    shell_alias_load();
 
     debug_serial('b');  // About to load accounts
     shell_load_accounts();
@@ -939,6 +968,7 @@ void shell_start(void) {
         draw_chrome(user);
         terminal_writeln("Welcome to guyOS kernel shell.");
         terminal_writeln("Type help to explore. Accounts are persisted to disk.");
+        show_motd();
         debug_serial('p');  // About to enter shell loop
         shell_loop(user);
         debug_serial('q');  // Exited shell loop (logout)

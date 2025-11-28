@@ -30,5 +30,12 @@ int shell_getch(void);
 extern const char *shell_title;
 // Move terminal cursor back one character (for rendering overlays)
 void shell_cursor_backspace(void);
+// Alias helpers
+void shell_alias_load(void);
+typedef struct {
+    char alias[16];
+    char real[16];
+} shell_alias_t;
+const shell_alias_t *shell_aliases(size_t *count);
 
 #endif

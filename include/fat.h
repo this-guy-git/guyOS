@@ -43,5 +43,7 @@ bool fat_read_file(const char *name, uint8_t *buf, size_t max, size_t *out_len);
 bool fat_write_file(const char *name, const uint8_t *buf, size_t len);
 bool fat_read_file_at(uint32_t dir_cluster, const char *name, uint8_t *buf, size_t max, size_t *out_len);
 bool fat_write_file_at(uint32_t dir_cluster, const char *name, const uint8_t *buf, size_t len);
+// Delete a file (not directories) in the given directory.
+bool fat_delete_file_at(uint32_t dir_cluster, const char *name);
 
 #endif

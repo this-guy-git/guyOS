@@ -7,7 +7,7 @@ bool fs_initialize_structure(void) {
     const char *dirs[] = {
         "usr",
         "shell",
-        "vital",
+        "sys",
     };
     
     for (int i = 0; i < 3; i++) {

@@ -20,6 +20,11 @@ extern const command_t CMD_FIXUSERDIRS;
 extern const command_t CMD_TOUCH;
 extern const command_t CMD_CAT;
 extern const command_t CMD_TEDIT;
+extern const command_t CMD_HEXDUMP;
+extern const command_t CMD_CP;
+extern const command_t CMD_FIND;
+extern const command_t CMD_RM;
+extern const command_t CMD_ALIAS;
 
 static const command_t *command_table[] = {
     &CMD_HELP,
@@ -37,6 +42,11 @@ static const command_t *command_table[] = {
     &CMD_TOUCH,
     &CMD_CAT,
     &CMD_TEDIT,
+    &CMD_HEXDUMP,
+    &CMD_CP,
+    &CMD_FIND,
+    &CMD_RM,
+    &CMD_ALIAS,
     &CMD_FSTEST,
     &CMD_FIXUSERDIRS,
     &CMD_VERSION,
