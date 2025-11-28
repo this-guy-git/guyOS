@@ -23,9 +23,9 @@ def create_directory_structure(mount_point):
         "usr",
         "shell",
         "shell/cmd",
-        "vital",
-        "vital/kernel",
-        "vital/bootloader",
+        "sys",
+        "sys/kernel",
+        "sys/bootloader",
     ]
     
     for d in dirs:
@@ -65,7 +65,7 @@ def copy_system_files(mount_point, build_dir):
     """Copy kernel and bootloader files to filesystem"""
     
     # Copy kernel files
-    kernel_dest = mount_point / "vital" / "kernel"
+    kernel_dest = mount_point / "sys" / "kernel"
     kernel_files = [
         build_dir / "kernel.elf",
         build_dir / "kernel.bin",
@@ -76,7 +76,7 @@ def copy_system_files(mount_point, build_dir):
             print(f"Copied {f.name} to {kernel_dest}")
     
     # Copy bootloader files
-    bootloader_dest = mount_point / "vital" / "bootloader"
+    bootloader_dest = mount_point / "sys" / "bootloader"
     bootloader_files = [
         build_dir / "stage1.bin",
         build_dir / "stage2.bin",
@@ -96,10 +96,34 @@ def create_readme(mount_point):
         f.write("  /usr          - User home directories\n")
         f.write("  /shell        - Shell and command files\n")
         f.write("  /shell/cmd    - Command binaries\n")
-        f.write("  /vital        - System critical files\n")
-        f.write("  /vital/kernel - Kernel binaries\n")
-        f.write("  /vital/bootloader - Bootloader files\n")
+        f.write("  /sys        - System critical files\n")
+        f.write("  /sys/kernel - Kernel binaries\n")
+        f.write("  /sys/bootloader - Bootloader files\n")
+        f.write("  /sys/motd   - Message of the Day file\n")
     print(f"Created README at {readme}")
+
+def create_motd(mount_point):
+    """Create a Message of the Day file"""
+    motd = mount_point / "sys" / "motd"
+    with open(motd, 'w') as f:
+        f.write(r"""                                                           
+                                     ,----..               
+                                    /   /   \   .--.--.    
+                                   /   .     : /  /    '.  
+                    ,--,          .   /   ;.  \  :  /`. /  
+  ,----._,.       ,'_ /|         .   ;   /  ` ;  |  |--`   
+ /   /  ' /  .--. |  | :     .--,;   |  ; \ ; |  :  ;_     
+|   :     |,'_ /| :  . |   /_ ./||   :  | ; | '\  \    `.  
+|   | .\  .|  ' | |  . ., ' , ' :.   |  ' ' ' : `----.   \ 
+.   ; ';  ||  | ' |  | /___/ \: |'   ;  \; /  | __ \  \  | 
+'   .   . |:  | : ;  ; |.  \  ' | \   \  ',  / /  /`--'  / 
+ `---`-'| |'  :  `--'   \\  ;   :  ;   :    / '--'.     /  
+ .'__/\_: |:  ,      .-./ \  \  ;   \   \ .'    `--'---'   
+ |   :    : `--`----'      :  \  \   `---`                 
+  \   \  /                  \  ' ;                         
+   `--`-'                    `--`                          
+""")
+    print(f"Created MOTD at {motd}")
 
 def main():
     if len(sys.argv) < 3:
@@ -154,6 +178,9 @@ def main():
         
         # Create README
         create_readme(mount_point)
+        
+        # Create MOTD
+        create_motd(mount_point)
         
         # Sync to ensure everything is written
         run(["sync"])
