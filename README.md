@@ -6,7 +6,7 @@
 # guyOS
 </div>
 
-[![Build](https://img.shields.io/github/actions/workflow/status/this-guy-git/guyOS/build.yml?branch=main&label=build?style=flat&color=7C4EE1&labelColor=222222)](https://github.com/this-guy-git/guyOS/actions/workflows/build.yml)
+[![Build](https://img.shields.io/github/actions/workflow/status/this-guy-git/guyOS/build.yml?branch=master&label=build&style=flat&color=7C4EE1&labelColor=222222)](https://github.com/this-guy-git/guyOS/actions/workflows/build.yml)
 [![Stars](https://img.shields.io/github/stars/this-guy-git/guyOS?style=flat&color=7C4EE1&labelColor=222222)](https://github.com/this-guy-git/guyOS/stargazers)
 [![Issues](https://img.shields.io/github/issues/this-guy-git/guyOS?style=flat&color=7C4EE1&labelColor=222222)](https://github.com/this-guy-git/guyOS/issues)
 [![Last Commit](https://img.shields.io/github/last-commit/this-guy-git/guyOS?style=flat&color=7C4EE1&labelColor=222222)](https://github.com/this-guy-git/guyOS/commits/main)
