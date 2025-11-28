@@ -18,6 +18,9 @@ CMD_SRCS := $(wildcard kernel/cmd/*.c)
 CMD_OBJS := $(patsubst kernel/%.c,$(BUILD_DIR)/%.o,$(CMD_SRCS))
 DISK_IMG := $(BUILD_DIR)/guyos.img
 FAT_IMG := $(BUILD_DIR)/fat.img
+ISO_IMG := $(BUILD_DIR)/guyos.iso
+ISO_INSTALL := $(BUILD_DIR)/guyos-install.iso
+ISO_STAGE := $(BUILD_DIR)/iso_install
 
 DISK_SIZE ?= 134217728  # 128MB
 FAT_OFFSET ?= 8388608    # 8MB offset
@@ -26,6 +29,11 @@ FAT_SIZE_KB ?= 102400    # 100MB FAT (increased for filesystem)
 QEMU ?= qemu-system-x86_64
 QEMU_FLAGS := -m 256M -serial stdio -hda $(DISK_IMG)
 
+# Paths for isolinux-based installer ISO (override if different on your distro)
+ISOLINUX_BIN ?= /usr/lib/ISOLINUX/isolinux.bin
+LDLINUX_C32 ?= /usr/lib/syslinux/modules/bios/ldlinux.c32
+MEMDISK ?= /usr/lib/syslinux/memdisk
+
 CFLAGS := -ffreestanding -fno-stack-protector -fno-pic -m64 -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -O2 -Wall -Wextra -Wno-unused-parameter -g -Iinclude
 LDFLAGS := -nostdlib -z max-page-size=0x1000
 
@@ -33,6 +41,9 @@ all: $(DISK_IMG)
 
 run: $(DISK_IMG)
 	$(QEMU) $(QEMU_FLAGS)
+
+iso: $(ISO_IMG)
+iso-install: $(ISO_INSTALL)
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
@@ -81,6 +92,30 @@ $(DISK_IMG): $(STAGE1_BIN) $(STAGE2_BIN) $(KERNEL_BIN) FS_BUILT KERNEL_META
 	@echo "Building disk image..."
 	$(PYTHON) builddisk.py $(STAGE1_BIN) $(STAGE2_BIN) $(KERNEL_BIN) $(FAT_IMG) $(FAT_OFFSET) $(DISK_SIZE)
 
+$(ISO_IMG): $(DISK_IMG) $(FAT_IMG)
+	@echo "Creating ISO with disk and FAT images..."
+	@mkdir -p $(BUILD_DIR)/iso_root
+	@cp $(DISK_IMG) $(BUILD_DIR)/iso_root/
+	@cp $(FAT_IMG) $(BUILD_DIR)/iso_root/
+	@genisoimage -quiet -o $(ISO_IMG) -V GUYOS -iso-level 3 $(BUILD_DIR)/iso_root
+	@rm -rf $(BUILD_DIR)/iso_root
+
+$(ISO_INSTALL): $(DISK_IMG)
+	@echo "Creating bootable installer ISO (isolinux + memdisk)..."
+	@rm -rf $(ISO_STAGE)
+	@mkdir -p $(ISO_STAGE)/isolinux
+	@cp $(ISOLINUX_BIN) $(ISO_STAGE)/isolinux/isolinux.bin
+	@cp $(LDLINUX_C32) $(ISO_STAGE)/isolinux/ldlinux.c32
+	@cp $(MEMDISK) $(ISO_STAGE)/isolinux/memdisk
+	@cp $(DISK_IMG) $(ISO_STAGE)/isolinux/guyos.img
+	@printf "DEFAULT guyos\nPROMPT 0\nTIMEOUT 50\n\nLABEL guyos\n  KERNEL memdisk\n  APPEND harddisk initrd=guyos.img\n" > $(ISO_STAGE)/isolinux/isolinux.cfg
+	@genisoimage -quiet -o $(ISO_INSTALL) \
+		-b isolinux/isolinux.bin -c isolinux/boot.cat \
+		-no-emul-boot -boot-load-size 4 -boot-info-table \
+		-V GUYOS-INSTALL \
+		$(ISO_STAGE)
+	@rm -rf $(ISO_STAGE)
+
 clean:
 	rm -f $(BUILD_DIR)/*.bin $(BUILD_DIR)/*.o $(BUILD_DIR)/*.elf $(BUILD_DIR)/*.img $(BUILD_DIR)/KERNEL_META $(BUILD_DIR)/FS_BUILT $(BUILD_DIR)/cmd/*.o
 	@if [ -d "/tmp/guyos_mount" ]; then \
@@ -89,4 +124,4 @@ clean:
 		fi; \
 	fi
 
-.PHONY: all run clean
+.PHONY: all run clean iso iso-install
