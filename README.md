@@ -6,11 +6,11 @@
 # guyOS
 </div>
 
-[![Build](https://img.shields.io/github/actions/workflow/status/this-guy-git/guyOS/build.yml?branch=main&label=build)](https://github.com/this-guy-git/guyOS/actions/workflows/build.yml)
-[![Stars](https://img.shields.io/github/stars/this-guy-git/guyOS?style=social)](https://github.com/this-guy-git/guyOS/stargazers)
-[![Issues](https://img.shields.io/github/issues/this-guy-git/guyOS)](https://github.com/this-guy-git/guyOS/issues)
-[![Last Commit](https://img.shields.io/github/last-commit/this-guy-git/guyOS)](https://github.com/this-guy-git/guyOS/commits/main)
-[![License](https://img.shields.io/badge/license-GPLv3-lightgrey)](#license)
+[![Build](https://img.shields.io/github/actions/workflow/status/this-guy-git/guyOS/build.yml?branch=main&label=build?style=flat&color=7C4EE1&labelColor=222222)](https://github.com/this-guy-git/guyOS/actions/workflows/build.yml)
+[![Stars](https://img.shields.io/github/stars/this-guy-git/guyOS?style=flat&color=7C4EE1&labelColor=222222)](https://github.com/this-guy-git/guyOS/stargazers)
+[![Issues](https://img.shields.io/github/issues/this-guy-git/guyOS?style=flat&color=7C4EE1&labelColor=222222)](https://github.com/this-guy-git/guyOS/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/this-guy-git/guyOS?style=flat&color=7C4EE1&labelColor=222222)](https://github.com/this-guy-git/guyOS/commits/main)
+[![License](https://img.shields.io/badge/license-GPLv3-lightgrey?style=flat&color=7C4EE1&labelColor=222222)](#license)
 
 guyOS is a small x86_64 hobby OS with a text-mode shell, a FAT32 filesystem, and built-in commands including a tiny editor (`tedit`). This repo builds a bootable disk image and runs it in QEMU.
 
