@@ -1,0 +1,8 @@
+// Stub header example (matches existing examples/io.gh in examples dir)
+#GUYOS_header
+
+int print(str message);
+int println(str message);
+str input(str prompt);
+
+END

@@ -1,0 +1,9 @@
+// String helpers (planned)
+#GUYOS_header
+
+int len(str s);
+str substr(str s, int start, int len);
+str concat(str a, str b);
+int cmp(str a, str b);
+
+END;

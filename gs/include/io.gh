@@ -1,0 +1,18 @@
+// Header reflecting VM-supported helpers
+#GUYOS_header
+
+int clear();
+int title(str text);
+int print(str message);
+int println(str message);
+str input(str prompt);
+int print_last();
+int println_last();
+int store(int slot);
+int load_print(int slot);
+int load_println(int slot);
+int slot_set(int slot, str literal);
+int load_file(str path);
+int save_file(str path, int count);
+
+END;

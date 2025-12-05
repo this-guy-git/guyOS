@@ -1,0 +1,12 @@
+// System utilities (future syscalls)
+#GUYOS_header
+
+int exit(int code);
+int sleep_ms(int ms);
+str version();
+str kernel_version();
+// VM helpers currently supported by interpreter
+int clear();
+int title(str text);
+
+END;
