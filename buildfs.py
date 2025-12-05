@@ -61,6 +61,22 @@ def create_command_files(mount_point):
             f.write(f"builtin command stub for {long_name}\n")
         print(f"Created command stub: {dest}")
 
+def copy_gxe_apps(mount_point, src_dir="gxe"):
+    """Copy prebuilt .gxe apps from src_dir into /shell/gxe."""
+    gxe_dir = mount_point / "shell" / "gxe"
+    gxe_dir.mkdir(parents=True, exist_ok=True)
+    src_path = Path(src_dir)
+    if not src_path.exists():
+        print(f"gxe source dir missing: {src_path} (skipping)")
+        return
+    for gxe in src_path.glob("*.gxe"):
+        dest = gxe_dir / gxe.name
+        try:
+            shutil.copy2(gxe, dest)
+            print(f"Copied gxe app: {gxe} -> {dest}")
+        except Exception as e:
+            print(f"Failed to copy {gxe}: {e}")
+
 def copy_system_files(mount_point, build_dir):
     """Copy kernel and bootloader files to filesystem"""
     
@@ -172,6 +188,7 @@ def main():
         # Create directory structure
         create_directory_structure(mount_point)
         create_command_files(mount_point)
+        copy_gxe_apps(mount_point)
         
         # Copy system files
         copy_system_files(mount_point, build_dir)
