@@ -12,7 +12,6 @@ typedef unsigned long long u64;
 typedef unsigned int u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
-typedef __SIZE_TYPE__ size_t;
 
 static void debug_serial(char c) {
     while (!(inb(0x3FD) & 0x20)) {}
@@ -58,6 +57,9 @@ static char *strcpy(char *dst, const char *src) {
     *d = 0;
     return dst;
 }
+
+// Forward declaration for current user (defined with init below)
+static char current_user_name[32];
 
 // ---------------- VGA text output ----------------
 enum vga_color {
@@ -215,6 +217,15 @@ static void terminal_write_uint32(uint32_t v) {
 void shell_write(const char *s) { terminal_write(s); }
 void shell_write_line(const char *s) { terminal_writeln(s); }
 void shell_cursor_backspace(void) { terminal_backspace(); }
+void shell_set_color(uint8_t color) { terminal_setcolor(color); }
+void shell_reset_color(void) { terminal_setcolor(COLOR_BODY); }
+void shell_get_dimensions(size_t *rows, size_t *cols, size_t *body_top, size_t *body_bottom) {
+    if (rows) *rows = VGA_HEIGHT;
+    if (cols) *cols = VGA_WIDTH;
+    if (body_top) *body_top = BODY_TOP;
+    if (body_bottom) *body_bottom = BODY_BOTTOM;
+}
+void shell_clear_body(void) { terminal_clear_body(); }
 
 static void draw_bar(size_t row, u8 color, const char *left, const char *right) {
     clear_row(row, color);
@@ -232,10 +243,12 @@ static void draw_bar(size_t row, u8 color, const char *left, const char *right) 
     }
 }
 
-const char *shell_title = "guyOS kernel shell";
+const char *shell_title = "gsh";
+void shell_set_title(const char *title) { shell_title = title ? title : "gsh"; }
+const char *shell_get_title(void) { return shell_title; }
 
 static void draw_chrome_with_footer(const char *user, const char *footer_left) {
-    const char *title = shell_title ? shell_title : "guyOS kernel shell";
+    const char *title = shell_title ? shell_title : "gsh";
     char right[40];
     strcpy(right, "user: ");
     if (user) strcpy(right + 6, user); else strcpy(right + 6, "<none>");
@@ -366,6 +379,12 @@ static size_t read_line(char *buf, size_t max, bool echo, const char *prompt_pre
     terminal_putc('\n');
     return len;
 }
+size_t shell_read_line(char *buf, size_t max, bool echo, const char *prompt, const char *help_msg) {
+    return read_line(buf, max, echo, prompt, current_user_name, help_msg);
+}
+size_t shell_prompt(char *buf, size_t max, const char *prompt) {
+    return read_line(buf, max, true, prompt, current_user_name, 0);
+}
 
 // ---------------- Accounts + shell ----------------
 #define MAX_USERS 8
@@ -387,6 +406,60 @@ static char cwd[128] = "/";
 static uint32_t cwd_cluster = 0;
 static uint32_t shell_cmd_cluster = 0;
 static char home_path[64] = "/";
+static char cpu_vendor[13] = "unknown";
+static char cpu_brand[49] = "unknown";
+static uint64_t mem_total = 0;
+
+const char *shell_cpu_brand(void) { return cpu_brand; }
+const char *shell_cpu_vendor(void) { return cpu_vendor; }
+uint64_t shell_mem_total_bytes(void) { return mem_total; }
+
+static void detect_cpu(void) {
+    uint32_t eax, ebx, ecx, edx;
+    eax = 0; ecx = 0;
+    __asm__ volatile("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(eax), "c"(ecx));
+    ((uint32_t*)cpu_vendor)[0] = ebx;
+    ((uint32_t*)cpu_vendor)[1] = edx;
+    ((uint32_t*)cpu_vendor)[2] = ecx;
+    cpu_vendor[12] = 0;
+    eax = 0x80000000; ecx = 0;
+    __asm__ volatile("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(eax), "c"(ecx));
+    if (eax >= 0x80000004) {
+        uint32_t *p = (uint32_t *)cpu_brand;
+        for (uint32_t leaf = 0x80000002; leaf <= 0x80000004; leaf++) {
+            __asm__ volatile("cpuid" : "=a"(p[0]), "=b"(p[1]), "=c"(p[2]), "=d"(p[3]) : "a"(leaf));
+            p += 4;
+        }
+        cpu_brand[48] = 0;
+    }
+}
+
+static uint16_t cmos_read16(uint8_t reg) {
+    outb(0x70, reg);
+    uint8_t lo = inb(0x71);
+    outb(0x70, reg + 1);
+    uint8_t hi = inb(0x71);
+    return (uint16_t)lo | ((uint16_t)hi << 8);
+}
+
+static void detect_mem(void) {
+    // Approximate total memory using CMOS registers. Good enough for fetch output.
+    uint16_t ext_1m_16m_kb = cmos_read16(0x15);   // KB between 1MB-16MB
+    uint16_t ext_above_16m_kb = cmos_read16(0x17); // KB above 16MB (legacy)
+    uint16_t ext_above_16m_64k = cmos_read16(0x34); // 64KB blocks above 16MB (newer)
+
+    uint64_t total = 1024 * 1024; // base 1MB
+    if (ext_above_16m_64k) {
+        total = 16ULL * 1024 * 1024 + (uint64_t)ext_above_16m_64k * 64ULL * 1024ULL;
+    } else if (ext_above_16m_kb) {
+        total = 16ULL * 1024 * 1024 + (uint64_t)ext_above_16m_kb * 1024ULL;
+    } else if (ext_1m_16m_kb) {
+        total += (uint64_t)ext_1m_16m_kb * 1024ULL;
+    } else {
+        total = 0; // unknown
+    }
+    mem_total = total;
+}
 
 // Show MOTD if /sys/motd exists
 static void show_motd(void) {
@@ -854,7 +927,7 @@ static void handle_command(char *line, const char *current_user, bool *logout_re
             }
             if (cmds[i]->handler) cmds[i]->handler(arg1, arg2);
             // Reset title after any command returns; leave screen intact unless caller redraws
-            shell_title = "guyOS kernel shell";
+            shell_title = "gsh";
             return;
         }
     }
@@ -909,6 +982,8 @@ void shell_start(void) {
     shell_set_cwd("/");
     ensure_shell_cmd_dir();
     shell_alias_load();
+    detect_cpu();
+    detect_mem();
 
     debug_serial('b');  // About to load accounts
     shell_load_accounts();
@@ -966,7 +1041,7 @@ void shell_start(void) {
         size_t hi = 0; while (home[hi] && hi + 1 < sizeof(home_path)) { home_path[hi] = home[hi]; hi++; } home_path[hi] = 0;
         
         draw_chrome(user);
-        terminal_writeln("Welcome to guyOS kernel shell.");
+        terminal_writeln("Welcome to guyOS!");
         terminal_writeln("Type help to explore. Accounts are persisted to disk.");
         show_motd();
         debug_serial('p');  // About to enter shell loop
