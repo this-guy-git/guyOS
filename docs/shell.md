@@ -1,22 +1,24 @@
-# Shell Internals
+# Shell Internals (gsh)
 
 ## Overview
-The shell runs entirely in kernel space and renders a text UI via VGA. It presents a prompt `user @ guyOS/<cwd> >` and dispatches built-in commands.
+The gsh shell runs entirely in kernel space and renders a text UI via VGA. It presents a prompt `user @ guyOS/<cwd> >` and dispatches built-in commands.
 
 ## Prompt & Title
 - Prompt built in `shell_loop` (see `shell.c`).
-- Title text is `shell_title` (default `guyOS kernel shell`). Interactive apps (e.g., `tedit`) can temporarily change it.
+- Title text is `shell_title` (default `gsh`). Interactive apps (e.g., `tedit`) can temporarily change it.
+- Use `shell_set_title` / `shell_get_title` to manage the title safely.
 
 ## Input Handling
 - `keyboard_getch` in `shell.c` reads scancodes, handles Shift/Ctrl, and returns ASCII or extended codes:
   - `KEY_EXT_UP/DOWN/LEFT/RIGHT/HOME/END/DELETE`
   - `KEY_F1`, `KEY_F5`, `'\n'`, `'\b'`
 - `shell_getch` exposes raw key reads to commands/apps.
-- `read_line` provides a minimal line editor for the prompt (no history by default).
+- `shell_read_line` / `shell_prompt` expose the shell's minimal line editor (no history by default).
 
 ## Output
 - VGA text functions in `shell.c` (`terminal_write`, `terminal_putc`, `terminal_redraw`).
 - Public API: `shell_write`, `shell_write_line`, `shell_redraw`, `shell_cursor_backspace`.
+- `shell_get_dimensions` reports rows/cols/body area; `shell_clear_body` wipes only the main pane.
 
 ## Commands
 - Registered in `kernel/commands.c` as an array of `command_t`.

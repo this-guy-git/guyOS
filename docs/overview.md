@@ -4,13 +4,13 @@ This document summarizes the major pieces of guyOS as shipped in this repo.
 
 ## Boot & Kernel
 - **Bootloader**: two-stage loader (`boot/stage1.asm`, `boot/stage2.asm`) that loads the kernel image.
-- **Kernel**: freestanding x86_64 kernel built from `kernel/` sources (`kernel.c`, `shell.c`, `fat.c`, `disk.c`, commands in `kernel/cmd/`).
+- **Kernel (gkern)**: freestanding x86_64 kernel built from `kernel/` sources (`kernel.c`, `shell.c`, `fat.c`, `disk.c`, commands in `kernel/cmd/`).
 - **Makefile**: builds the bootloader, kernel, FAT partition image, and full disk image; runs QEMU (`make run`).
 
 ## Shell
-- Text-mode shell rendered via VGA; prompt shows `user @ guyOS/<cwd>`.
+- Text-mode shell (gsh) rendered via VGA; prompt shows `user @ guyOS/<cwd>`.
 - Commands are built-ins defined in `kernel/cmd/` and registered in `kernel/commands.c`.
-- Title bar text is stored in `shell_title`; interactive apps like `tedit` temporarily change it.
+- Title bar text is stored in `shell_title` (default `gsh`); interactive apps like `tedit` temporarily change it.
 
 ## Filesystem
 - FAT32 partition at an 8 MB offset (see `Makefile` and `FAT_PART_LBA` in `shell.c`).
