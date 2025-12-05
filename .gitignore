@@ -10,3 +10,14 @@ build
 *.iso
 *.img
 *.bin
+
+# Compiled GScript executables
+*.gxe
+
+# GScript Files that are not part of the OS
+*.gs
+*.gh
+
+# GScript files that ARE part of the OS are tracked in the repo
+!gs/examples/*
+!gs/include/*
