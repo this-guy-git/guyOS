@@ -25,6 +25,8 @@ extern const command_t CMD_CP;
 extern const command_t CMD_FIND;
 extern const command_t CMD_RM;
 extern const command_t CMD_ALIAS;
+extern const command_t CMD_FETCH;
+extern const command_t CMD_GXE;
 
 static const command_t *command_table[] = {
     &CMD_HELP,
@@ -47,6 +49,8 @@ static const command_t *command_table[] = {
     &CMD_FIND,
     &CMD_RM,
     &CMD_ALIAS,
+    &CMD_FETCH,
+    &CMD_GXE,
     &CMD_FSTEST,
     &CMD_FIXUSERDIRS,
     &CMD_VERSION,
